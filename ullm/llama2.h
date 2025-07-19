@@ -49,12 +49,6 @@ typedef struct {
   // The prompt to generate a response to.
   const char* prompt;
 
-  // The path to the checkpoint file.
-  const char* checkpoint_path;
-
-  // The path to the tokenizer file.
-  const char* tokenizer_path;
-
   // Model configuration.
   float temperature;
   float topp;

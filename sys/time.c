@@ -15,24 +15,10 @@
  */
 
 #include "sys/time.h"
-
-#ifdef __APPLE__
-#include <mach/mach_time.h>
-#else
 #include <time.h>
-#endif
 
 uint64_t UllmTimeNanos() {
-#ifdef __APPLE__
-  static mach_timebase_info_data_t timebase_info = {};
-  if (timebase_info.denom == 0) {
-    mach_timebase_info(&timebase_info);
-  }
-
-  return mach_absolute_time() * timebase_info.numer / timebase_info.denom;
-#else
   struct timespec t;
   clock_gettime(CLOCK_MONOTONIC, &t);
   return (t.tv_sec * 1000000000) + t.tv_nsec;
-#endif
 }

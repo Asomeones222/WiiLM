@@ -4,6 +4,9 @@
         "c-flags.h": "c",
         "llama2.h": "c",
         "log.h": "c",
-        "macros.h": "c"
+        "macros.h": "c",
+        "tok512.h": "c",
+        "tok512-bige.h": "c",
+        "time.h": "c"
     }
 }

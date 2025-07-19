@@ -20,7 +20,7 @@
 #include <fcntl.h>
 #include <inttypes.h>
 #include <string.h>
-#include <sys/mman.h>
+// #include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
@@ -32,11 +32,11 @@
 UllmStatus UllmFileOpen(const char* path, UllmFile* file) {
   memset(file, 0, sizeof(UllmFile));
 
-  // struct stat st;
-  // if (stat(path, &st) != 0) {
-  //   ULOGE("Failed to stat file '%s': %s (%d)", path, strerror(errno), errno);
-  //   return ULLM_STATUS_IO_ERROR;
-  // }
+  struct stat st;
+  if (stat(path, &st) != 0) {
+    ULOGE("Failed to stat file '%s': %s (%d)", path, strerror(errno), errno);
+    return ULLM_STATUS_IO_ERROR;
+  }
 
   file->fd = open(path, O_RDONLY);
   if (file->fd < 0) {
@@ -44,8 +44,8 @@ UllmStatus UllmFileOpen(const char* path, UllmFile* file) {
     return ULLM_STATUS_IO_ERROR;
   }
 
-  // file->size = st.st_size;
-  // ULOGI("Opened file '%s' with size %" PRIu64, path, file->size);
+  file->size = st.st_size;
+  ULOGI("Opened file '%s' with size %" PRIu64, path, file->size);
   return ULLM_STATUS_OK;
 }
 

@@ -38,6 +38,7 @@
 #include "sys/time.h"
 #include "llama2.h"
 #include "log.h"
+#include "tok512-bige.h"
 
 #define ULLM_LOG_TAG "ullm.llama2"
 
@@ -148,12 +149,12 @@ cleanup:
 static UllmStatus UllmLlama2BuildTransformer(const UllmLlama2RunConfig* config,
   UllmLlama2State* state) {
   
-  if (config->steps > state->transformer.config.seq_len) {
-      ULLM_RETURN_IF_ERROR(UllmLlama2ReadCheckpoint(config, state));
-      ULOGE("steps out of range: %u vs %" PRIu32,
-        config->steps, state->transformer.config.seq_len);
-      return ULLM_STATUS_INVALID_ARGUMENT;
-  }
+  // if (config->steps > state->transformer.config.seq_len) {
+  //     ULLM_RETURN_IF_ERROR(UllmLlama2ReadCheckpoint(config, state));
+  //     ULOGE("steps out of range: %u vs %" PRIu32,
+  //       config->steps, state->transformer.config.seq_len);
+  //     return ULLM_STATUS_INVALID_ARGUMENT;
+  // }
 
   return UllmLlama2MallocRunState(&state->transformer);
 }
@@ -432,13 +433,16 @@ UllmStatus UllmLlama2BuildTokenizer(const UllmLlama2RunConfig* config,
     return ULLM_STATUS_OOM;
   }
 
-  UllmFile tokenizer_file;
-  ULLM_RETURN_IF_ERROR(UllmFileOpen(config->tokenizer_path, &tokenizer_file));
+  // UllmFile tokenizer_file;
+  // ULLM_RETURN_IF_ERROR(UllmFileOpen(config->tokenizer_path, &tokenizer_file));
 
   uint32_t max_token_length = 0;
   UllmStatus status = ULLM_STATUS_OK;
-  ULLM_GOTO_IF_ERROR(cleanup, status, UllmFileRead(&tokenizer_file,
-      &max_token_length, sizeof(uint32_t)));
+  // ULLM_GOTO_IF_ERROR(cleanup, status, UllmFileRead(&tokenizer_file,
+  //     &max_token_length, sizeof(uint32_t)));
+
+  // Replacement for opening the tokenizer file
+  memcpy(&max_token_length, tok512_bin, sizeof(uint32_t));
 
   // Create a temporary buffer that will store merge candidates of always two
   // consecutive tokens. Double for concat, +1 for null terminator +2 for UTF8
@@ -451,20 +455,25 @@ UllmStatus UllmLlama2BuildTokenizer(const UllmLlama2RunConfig* config,
   }
 
   for (int i = 0; i < vocab_size; i++) {
-    ULLM_GOTO_IF_ERROR(cleanup, status, UllmFileRead(&tokenizer_file,
-        &t->vocab_scores[i], sizeof(float)));
+    // ULLM_GOTO_IF_ERROR(cleanup, status, UllmFileRead(&tokenizer_file,
+    //     &t->vocab_scores[i], sizeof(float)));
+    memcpy(&t->vocab_scores[i], tok512_bin, sizeof(float));
 
     uint32_t len;
-    ULLM_GOTO_IF_ERROR(cleanup, status, UllmFileRead(&tokenizer_file,
-        &len, sizeof(uint32_t)));
+    // ULLM_GOTO_IF_ERROR(cleanup, status, UllmFileRead(&tokenizer_file,
+    //     &len, sizeof(uint32_t)));
+    memcpy(&len, tok512_bin, sizeof(uint32_t));
+
     t->vocab[i] = (char *)UllmMemoryAlloc(len + 1);
     if (t->vocab[i] == NULL) {
       ULOGE("Failed to alloc vocab memory");
       ULLM_GOTO_IF_ERROR(cleanup, status, ULLM_STATUS_OOM);
     }
 
-    ULLM_GOTO_IF_ERROR(cleanup, status, UllmFileRead(&tokenizer_file,
-        t->vocab[i], len));
+    // ULLM_GOTO_IF_ERROR(cleanup, status, UllmFileRead(&tokenizer_file,
+    //     t->vocab[i], len));
+    memcpy(t->vocab[i], tok512_bin, len);
+
     t->vocab[i][len] = '\0'; // add the string terminating token
   }
 
@@ -804,8 +813,6 @@ static UllmStatus UllmLlama2ValidateConfig(const UllmLlama2RunConfig* config) {
 
 void UllmLlama2RunConfigInit(UllmLlama2RunConfig* config) {
   config->prompt = NULL;
-  config->checkpoint_path = NULL;
-  config->tokenizer_path = NULL;
   config->temperature = 1.0f;
   config->topp = 0.9f;
   config->steps = 256;
@@ -817,8 +824,8 @@ void UllmLlama2RunConfigInit(UllmLlama2RunConfig* config) {
 UllmStatus UllmLlama2Init(const UllmLlama2RunConfig* config,
     UllmLlama2State* state) {
   memset(state, 0, sizeof(UllmLlama2State));
-  // ULLM_RETURN_IF_ERROR(UllmLlama2ValidateConfig(config));
-  // ULLM_RETURN_IF_ERROR(UllmLlama2BuildTransformer(config, state));
+  ULLM_RETURN_IF_ERROR(UllmLlama2ValidateConfig(config));
+  ULLM_RETURN_IF_ERROR(UllmLlama2BuildTransformer(config, state));
   ULLM_RETURN_IF_ERROR(UllmLlama2BuildTokenizer(config, state));
   ULLM_RETURN_IF_ERROR(UllmLlama2BuildSampler(config, state));
   return ULLM_STATUS_OK;

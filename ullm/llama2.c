@@ -146,12 +146,13 @@ cleanup:
 }
 
 static UllmStatus UllmLlama2BuildTransformer(const UllmLlama2RunConfig* config,
-    UllmLlama2State* state) {
-  ULLM_RETURN_IF_ERROR(UllmLlama2ReadCheckpoint(config, state));
+  UllmLlama2State* state) {
+  
   if (config->steps > state->transformer.config.seq_len) {
-    ULOGE("steps out of range: %u vs %" PRIu32,
+      ULLM_RETURN_IF_ERROR(UllmLlama2ReadCheckpoint(config, state));
+      ULOGE("steps out of range: %u vs %" PRIu32,
         config->steps, state->transformer.config.seq_len);
-    return ULLM_STATUS_INVALID_ARGUMENT;
+      return ULLM_STATUS_INVALID_ARGUMENT;
   }
 
   return UllmLlama2MallocRunState(&state->transformer);
@@ -816,8 +817,8 @@ void UllmLlama2RunConfigInit(UllmLlama2RunConfig* config) {
 UllmStatus UllmLlama2Init(const UllmLlama2RunConfig* config,
     UllmLlama2State* state) {
   memset(state, 0, sizeof(UllmLlama2State));
-  ULLM_RETURN_IF_ERROR(UllmLlama2ValidateConfig(config));
-  ULLM_RETURN_IF_ERROR(UllmLlama2BuildTransformer(config, state));
+  // ULLM_RETURN_IF_ERROR(UllmLlama2ValidateConfig(config));
+  // ULLM_RETURN_IF_ERROR(UllmLlama2BuildTransformer(config, state));
   ULLM_RETURN_IF_ERROR(UllmLlama2BuildTokenizer(config, state));
   ULLM_RETURN_IF_ERROR(UllmLlama2BuildSampler(config, state));
   return ULLM_STATUS_OK;

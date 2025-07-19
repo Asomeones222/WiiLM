@@ -14,9 +14,9 @@ include $(DEVKITPPC)/wii_rules
 #---------------------------------------------------------------------------------
 TARGET		:=	$(notdir $(CURDIR))
 BUILD		:=	build
-SOURCES		:=	source out/c-flags/lib out/llama2.c ullm util model
+SOURCES		:=	source out/c-flags/lib out/llama2.c ullm util model sys
 DATA		:=	data  
-INCLUDES	:=	include out/c-flags/lib out/llama2.c ullm util model
+INCLUDES	:=	include out/c-flags/lib out/llama2.c ullm util model sys
 
 #---------------------------------------------------------------------------------
 # options for code generation

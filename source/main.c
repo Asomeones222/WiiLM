@@ -148,8 +148,8 @@ void Initialise() {
   if (rmode->viTVMode & VI_NON_INTERLACE)
     VIDEO_WaitVSync();
 
-  CON_InitEx(rmode, 20, 20, rmode->fbWidth-40, rmode->xfbHeight-40);
-  console_init(xfb, 20, 20, rmode->fbWidth-40, rmode->xfbHeight-40, rmode->fbWidth * VI_DISPLAY_PIX_SZ);
+  // CON_InitEx(rmode, 20, 20, rmode->fbWidth-40, rmode->xfbHeight-40);
+  console_init(xfb, 0, 0, rmode->fbWidth, rmode->xfbHeight, rmode->fbWidth * VI_DISPLAY_PIX_SZ);
 }
 
 int main(int argc, char** argv) {

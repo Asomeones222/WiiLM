@@ -10,7 +10,8 @@
         "time.h": "c",
         "*.x": "c",
         "memory.h": "c",
-        "stories260k-bige.h": "c"
+        "stories260k-bige.h": "c",
+        "*.xx": "c"
     },
     "makefile.configureOnOpen": true
 }

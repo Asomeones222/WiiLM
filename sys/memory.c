@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 
-#include "sys/memory.h"
-
+#include "memory.h"
 #include <stdlib.h>
-
+#include <stdio.h>
 #include "log.h"
 
 #define ULLM_LOG_TAG "ullm.sys.memory"
 
 void* UllmMemoryAlloc(size_t size) {
-  //ULOGD("Allocating %zu bytes", size);
+  printf("Called UllmMemoryAlloc with size %d\n", size);
+  // ULOGD("Allocating %zu bytes", size);
   return malloc(size);
 }
 

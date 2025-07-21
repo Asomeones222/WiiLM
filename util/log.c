@@ -18,6 +18,7 @@
 
 #include <stdarg.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 char UllmLogLevelChar(int level) {
   switch (level) {
@@ -37,6 +38,8 @@ char UllmLogLevelChar(int level) {
 void UllmLog(const char* tag, int level, const char* file, int line,
     const char* fmt, ...) {
   // Print level and tag.
+  printf(tag);
+  // exit(1);
   fprintf(stderr, "%c %s: ", UllmLogLevelChar(level), tag);
 
   // Print the formatted log.

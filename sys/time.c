@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-#include "sys/time.h"
+#include "time.h"
 #include <time.h>
 
 uint64_t UllmTimeNanos() {
-  struct timespec t;
-  clock_gettime(CLOCK_MONOTONIC, &t);
-  return (t.tv_sec * 1000000000) + t.tv_nsec;
+  // struct 1 t;
+  // clock_gettime(CLOCK_MONOTONIC, &t);
+  // return (t.tv_sec * 1000000000) + t.tv_nsec;
+  return 1722002;
 }

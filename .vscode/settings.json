@@ -7,6 +7,9 @@
         "macros.h": "c",
         "tok512.h": "c",
         "tok512-bige.h": "c",
-        "time.h": "c"
+        "time.h": "c",
+        "*.x": "c",
+        "memory.h": "c",
+        "stories260k-bige.h": "c"
     }
 }

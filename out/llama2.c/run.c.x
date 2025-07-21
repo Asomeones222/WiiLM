@@ -141,7 +141,8 @@ void read_checkpoint(char* checkpoint, Config* config, TransformerWeights* weigh
     // FILE *file = fopen(checkpoint, "rb");
     // if (!file) { fprintf(stderr, "Couldn't open file %s\n", checkpoint); exit(EXIT_FAILURE); }
     // read in the config header
-    if (fread(config, sizeof(Config), 1, file) != 1) { exit(EXIT_FAILURE); }
+    // if (fread(config, sizeof(Config), 1, file) != 1) { exit(EXIT_FAILURE); }
+    memcpy(config, stories260K_bin, sizeof(Config));
     // negative vocab size is hacky way of signaling unshared weights. bit yikes.
     int shared_weights = config->vocab_size > 0 ? 1 : 0;
     config->vocab_size = abs(config->vocab_size);
@@ -179,11 +180,11 @@ void build_transformer(Transformer *t, char* checkpoint_path) {
 }
 
 void free_transformer(Transformer* t) {
-    // close the memory mapping
-    if (t->data != MAP_FAILED) { munmap(t->data, t->file_size); }
-    if (t->fd != -1) { close(t->fd); }
-    // free the RunState buffers
-    free_run_state(&t->state);
+    // // close the memory mapping
+    // if (t->data != MAP_FAILED) { munmap(t->data, t->file_size); }
+    // if (t->fd != -1) { close(t->fd); }
+    // // free the RunState buffers
+    // free_run_state(&t->state);
 }
 
 // ----------------------------------------------------------------------------
@@ -728,9 +729,9 @@ int sample(Sampler* sampler, float* logits) {
 
 long time_in_ms() {
     // return time in milliseconds, for benchmarking the model speed
-    struct timespec time;
-    clock_gettime(CLOCK_REALTIME, &time);
-    return time.tv_sec * 1000 + time.tv_nsec / 1000000;
+    // struct timespec time;
+    // clock_gettime(CLOCK_REALTIME, &time);
+    return 1722002;
 }
 
 // ----------------------------------------------------------------------------
@@ -896,88 +897,88 @@ void chat(Transformer *transformer, Tokenizer *tokenizer, Sampler *sampler,
 
 // ----------------------------------------------------------------------------
 // CLI, include only if not testing
-#ifndef TESTING
+// #ifndef TESTING
 
-void error_usage() {
-    fprintf(stderr, "Usage:   run <checkpoint> [options]\n");
-    fprintf(stderr, "Example: run model.bin -n 256 -i \"Once upon a time\"\n");
-    fprintf(stderr, "Options:\n");
-    fprintf(stderr, "  -t <float>  temperature in [0,inf], default 1.0\n");
-    fprintf(stderr, "  -p <float>  p value in top-p (nucleus) sampling in [0,1] default 0.9\n");
-    fprintf(stderr, "  -s <int>    random seed, default time(NULL)\n");
-    fprintf(stderr, "  -n <int>    number of steps to run for, default 256. 0 = max_seq_len\n");
-    fprintf(stderr, "  -i <string> input prompt\n");
-    fprintf(stderr, "  -z <string> optional path to custom tokenizer\n");
-    fprintf(stderr, "  -m <string> mode: generate|chat, default: generate\n");
-    fprintf(stderr, "  -y <string> (optional) system prompt in chat mode\n");
-    exit(EXIT_FAILURE);
-}
+// void error_usage() {
+//     fprintf(stderr, "Usage:   run <checkpoint> [options]\n");
+//     fprintf(stderr, "Example: run model.bin -n 256 -i \"Once upon a time\"\n");
+//     fprintf(stderr, "Options:\n");
+//     fprintf(stderr, "  -t <float>  temperature in [0,inf], default 1.0\n");
+//     fprintf(stderr, "  -p <float>  p value in top-p (nucleus) sampling in [0,1] default 0.9\n");
+//     fprintf(stderr, "  -s <int>    random seed, default time(NULL)\n");
+//     fprintf(stderr, "  -n <int>    number of steps to run for, default 256. 0 = max_seq_len\n");
+//     fprintf(stderr, "  -i <string> input prompt\n");
+//     fprintf(stderr, "  -z <string> optional path to custom tokenizer\n");
+//     fprintf(stderr, "  -m <string> mode: generate|chat, default: generate\n");
+//     fprintf(stderr, "  -y <string> (optional) system prompt in chat mode\n");
+//     exit(EXIT_FAILURE);
+// }
 
-int main(int argc, char *argv[]) {
+// int main(int argc, char *argv[]) {
 
-    // default parameters
-    char *checkpoint_path = NULL;  // e.g. out/model.bin
-    char *tokenizer_path = "tokenizer.bin";
-    float temperature = 1.0f;   // 0.0 = greedy deterministic. 1.0 = original. don't set higher
-    float topp = 0.9f;          // top-p in nucleus sampling. 1.0 = off. 0.9 works well, but slower
-    int steps = 256;            // number of steps to run for
-    char *prompt = NULL;        // prompt string
-    unsigned long long rng_seed = 0; // seed rng with time by default
-    char *mode = "generate";    // generate|chat
-    char *system_prompt = NULL; // the (optional) system prompt to use in chat mode
+//     // default parameters
+//     char *checkpoint_path = NULL;  // e.g. out/model.bin
+//     char *tokenizer_path = "tokenizer.bin";
+//     float temperature = 1.0f;   // 0.0 = greedy deterministic. 1.0 = original. don't set higher
+//     float topp = 0.9f;          // top-p in nucleus sampling. 1.0 = off. 0.9 works well, but slower
+//     int steps = 256;            // number of steps to run for
+//     char *prompt = NULL;        // prompt string
+//     unsigned long long rng_seed = 0; // seed rng with time by default
+//     char *mode = "generate";    // generate|chat
+//     char *system_prompt = NULL; // the (optional) system prompt to use in chat mode
 
-    // poor man's C argparse so we can override the defaults above from the command line
-    if (argc >= 2) { checkpoint_path = argv[1]; } else { error_usage(); }
-    for (int i = 2; i < argc; i+=2) {
-        // do some basic validation
-        if (i + 1 >= argc) { error_usage(); } // must have arg after flag
-        if (argv[i][0] != '-') { error_usage(); } // must start with dash
-        if (strlen(argv[i]) != 2) { error_usage(); } // must be -x (one dash, one letter)
-        // read in the args
-        if (argv[i][1] == 't') { temperature = atof(argv[i + 1]); }
-        else if (argv[i][1] == 'p') { topp = atof(argv[i + 1]); }
-        else if (argv[i][1] == 's') { rng_seed = atoi(argv[i + 1]); }
-        else if (argv[i][1] == 'n') { steps = atoi(argv[i + 1]); }
-        else if (argv[i][1] == 'i') { prompt = argv[i + 1]; }
-        else if (argv[i][1] == 'z') { tokenizer_path = argv[i + 1]; }
-        else if (argv[i][1] == 'm') { mode = argv[i + 1]; }
-        else if (argv[i][1] == 'y') { system_prompt = argv[i + 1]; }
-        else { error_usage(); }
-    }
+//     // poor man's C argparse so we can override the defaults above from the command line
+//     if (argc >= 2) { checkpoint_path = argv[1]; } else { error_usage(); }
+//     for (int i = 2; i < argc; i+=2) {
+//         // do some basic validation
+//         if (i + 1 >= argc) { error_usage(); } // must have arg after flag
+//         if (argv[i][0] != '-') { error_usage(); } // must start with dash
+//         if (strlen(argv[i]) != 2) { error_usage(); } // must be -x (one dash, one letter)
+//         // read in the args
+//         if (argv[i][1] == 't') { temperature = atof(argv[i + 1]); }
+//         else if (argv[i][1] == 'p') { topp = atof(argv[i + 1]); }
+//         else if (argv[i][1] == 's') { rng_seed = atoi(argv[i + 1]); }
+//         else if (argv[i][1] == 'n') { steps = atoi(argv[i + 1]); }
+//         else if (argv[i][1] == 'i') { prompt = argv[i + 1]; }
+//         else if (argv[i][1] == 'z') { tokenizer_path = argv[i + 1]; }
+//         else if (argv[i][1] == 'm') { mode = argv[i + 1]; }
+//         else if (argv[i][1] == 'y') { system_prompt = argv[i + 1]; }
+//         else { error_usage(); }
+//     }
 
-    // parameter validation/overrides
-    if (rng_seed <= 0) rng_seed = (unsigned int)time(NULL);
-    if (temperature < 0.0) temperature = 0.0;
-    if (topp < 0.0 || 1.0 < topp) topp = 0.9;
-    if (steps < 0) steps = 0;
+//     // parameter validation/overrides
+//     if (rng_seed <= 0) rng_seed = 1722002;
+//     if (temperature < 0.0) temperature = 0.0;
+//     if (topp < 0.0 || 1.0 < topp) topp = 0.9;
+//     if (steps < 0) steps = 0;
 
-    // build the Transformer via the model .bin file
-    Transformer transformer;
-    build_transformer(&transformer, checkpoint_path);
-    if (steps == 0 || steps > transformer.config.seq_len) steps = transformer.config.seq_len; // override to ~max length
+//     // build the Transformer via the model .bin file
+//     Transformer transformer;
+//     build_transformer(&transformer, checkpoint_path);
+//     if (steps == 0 || steps > transformer.config.seq_len) steps = transformer.config.seq_len; // override to ~max length
 
-    // build the Tokenizer via the tokenizer .bin file
-    Tokenizer tokenizer;
-    build_tokenizer(&tokenizer, tokenizer_path, transformer.config.vocab_size);
+//     // build the Tokenizer via the tokenizer .bin file
+//     Tokenizer tokenizer;
+//     build_tokenizer(&tokenizer, tokenizer_path, transformer.config.vocab_size);
 
-    // build the Sampler
-    Sampler sampler;
-    build_sampler(&sampler, transformer.config.vocab_size, temperature, topp, rng_seed);
+//     // build the Sampler
+//     Sampler sampler;
+//     build_sampler(&sampler, transformer.config.vocab_size, temperature, topp, rng_seed);
 
-    // run!
-    if (strcmp(mode, "generate") == 0) {
-        generate(&transformer, &tokenizer, &sampler, prompt, steps);
-    } else if (strcmp(mode, "chat") == 0) {
-        chat(&transformer, &tokenizer, &sampler, prompt, system_prompt, steps);
-    } else {
-        fprintf(stderr, "unknown mode: %s\n", mode);
-        error_usage();
-    }
+//     // run!
+//     if (strcmp(mode, "generate") == 0) {
+//         generate(&transformer, &tokenizer, &sampler, prompt, steps);
+//     } else if (strcmp(mode, "chat") == 0) {
+//         chat(&transformer, &tokenizer, &sampler, prompt, system_prompt, steps);
+//     } else {
+//         fprintf(stderr, "unknown mode: %s\n", mode);
+//         error_usage();
+//     }
 
-    // memory and file handles cleanup
-    free_sampler(&sampler);
-    free_tokenizer(&tokenizer);
-    free_transformer(&transformer);
-    return 0;
-}
-#endif
+//     // memory and file handles cleanup
+//     free_sampler(&sampler);
+//     free_tokenizer(&tokenizer);
+//     free_transformer(&transformer);
+//     return 0;
+// }
+// #endif

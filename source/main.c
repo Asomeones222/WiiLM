@@ -74,6 +74,11 @@
 #include "llama2.h"
 #include "log.h"
 #include "macros.h"
+#include <stdlib.h>
+#include <malloc.h>
+#include <ogcsys.h>
+#include <gccore.h>
+#include <wiiuse/wpad.h>
 
 #define ULLM_LOG_TAG "ullm"
 
@@ -83,10 +88,12 @@ typedef struct {
 } Args;
 
 void OutputHandler(const char* token, void* cookie) {
+  // __fpurge(stdout);
   printf("%s", token);
 }
 
 UllmStatus UllmRunLlama2(const Args* args) {
+  printf("Called UllmRunLlama2\n");
   UllmLlama2RunConfig run_config;
   UllmLlama2RunConfigInit(&run_config);
   run_config.prompt = args->prompt;
@@ -98,6 +105,7 @@ UllmStatus UllmRunLlama2(const Args* args) {
   ULLM_GOTO_IF_ERROR(cleanup, status, UllmLlama2Generate(&run_config, &state));
 
 cleanup:
+  printf("Called UllmRunLlama2 cleanup\n");
   UllmLlama2Deinit(&state);
   return status;
 }
@@ -113,38 +121,73 @@ const struct {
 };
 
 UllmStatus UllmRun(const Args* args) {
+  printf("Called UllmRun\n");
   return model_runners[0].run(args);
 }
 
+static u32 *xfb;
+static GXRModeObj *rmode;
+
+void Initialise() {
+
+	VIDEO_Init();
+	// PAD_Init();
+	// Dolphin compatibility
+	WPAD_Init();
+	// Dolphin compatibility
+	WPAD_SetDataFormat(0, WPAD_FMT_BTNS_ACC_IR);
+	rmode = VIDEO_GetPreferredMode(NULL);
+
+	xfb = MEM_K0_TO_K1(SYS_AllocateFramebuffer(rmode));
+
+  VIDEO_Configure(rmode);
+  VIDEO_SetNextFramebuffer(xfb);
+  VIDEO_SetBlack(FALSE);
+  VIDEO_Flush();
+  VIDEO_WaitVSync();
+  if (rmode->viTVMode & VI_NON_INTERLACE)
+    VIDEO_WaitVSync();
+
+  CON_InitEx(rmode, 20, 20, rmode->fbWidth-40, rmode->xfbHeight-40);
+  console_init(xfb, 20, 20, rmode->fbWidth-40, rmode->xfbHeight-40, rmode->fbWidth * VI_DISPLAY_PIX_SZ);
+}
+
 int main(int argc, char** argv) {
-  if (argc > 0) {
-    c_flags_set_application_name(argv[0]);
-  }
+  Initialise();
+  printf("Hi!\n");
 
-  char** prompt = c_flag_string(
-      "prompt", "p", "LLM prompt", "");
-  bool *help = c_flag_bool(
-      "help", "h", "show usage", false);
-  c_flags_parse(&argc, &argv, false);
+  // if (argc > 0) {
+  //   c_flags_set_application_name(argv[0]);
+  // }
 
-  if (*help) {
-    c_flags_usage();
+  // char** prompt = c_flag_string(
+  //     "prompt", "p", "LLM prompt", "");
+  // bool *help = c_flag_bool(
+  //     "help", "h", "show usage", false);
+  // c_flags_parse(&argc, &argv, false);
+
+  // if (*help) {
+  //   c_flags_usage();
+  //   return 0;
+  // } else if (strlen(*prompt) == 0) {
+  //   c_flags_usage();
+  // } else {
+  Args args = {
+      .prompt = "Once upon a time"};
+
+  printf("Args:");
+  printf(args.prompt);
+  printf("\n");
+
+  setbuf(stdout, NULL);
+  UllmStatus status = UllmRun(&args);
+  if (status == ULLM_STATUS_OK)
+  {
     return 0;
-  } else if (strlen(*prompt) == 0) {
-    c_flags_usage();
   } else {
-    Args args = {
-      .prompt = *prompt
-    };
-
-    setbuf(stdout, NULL);
-    UllmStatus status = UllmRun(&args);
-    if (status == ULLM_STATUS_OK) {
-      return 0;
-    } else {
       ULOGE("Failed to run inference: %s", UllmStatusToString(status));
-    }
   }
+  // }
 
   return -1;
 }

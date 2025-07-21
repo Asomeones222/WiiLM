@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "sys/file.h"
+#include "file.h"
 
 #include <errno.h>
 #include <fcntl.h>
@@ -24,7 +24,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#include "sys/memory.h"
+#include "memory.h"
 #include "log.h"
 
 #define ULLM_LOG_TAG "ullm.file"

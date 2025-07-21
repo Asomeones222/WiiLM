@@ -34,15 +34,17 @@
 #define ULLM_ALTIVEC_ENABLED
 #endif
 
-#include "sys/memory.h"
-#include "sys/time.h"
+#include "memory.h"
+#include "time.h"
 #include "llama2.h"
 #include "log.h"
-#include "tok512-bige.h"
-
+#include "tok512.h"
+#include "stories260K.h"
 #define ULLM_LOG_TAG "ullm.llama2"
 
 static UllmStatus UllmLlama2MallocRunState(UllmLlama2Transformer* t) {
+  printf("Called UllmLlama2MallocRunState\n");
+
   UllmLlama2RunState* s = &t->state;
   UllmLlama2Config* p = &t->config;
   int kv_dim = (p->dim * p->n_kv_heads) / p->n_heads;
@@ -61,6 +63,7 @@ static UllmStatus UllmLlama2MallocRunState(UllmLlama2Transformer* t) {
     ULOGE("Failed to allocate run state");
     return ULLM_STATUS_OOM;
   }
+  printf("Called UllmLlama2MallocRunState ULLM_STATUS_OK\n");
 
   return ULLM_STATUS_OK;
 }
@@ -126,17 +129,29 @@ static UllmStatus ReadWeights(UllmLlama2TransformerWeights *w,
 
 static UllmStatus UllmLlama2ReadCheckpoint(const UllmLlama2RunConfig* config,
     UllmLlama2State* state) {
+  printf("Called UllmLlama2ReadCheckpoint\n");
+
   // memory map the Transformer weights into the data pointer
   UllmFile checkpoint_file;
-  ULLM_RETURN_IF_ERROR(UllmFileOpen(config->checkpoint_path, &checkpoint_file));
-
-  UllmLlama2Transformer* t = &state->transformer;
+  // ULLM_RETURN_IF_ERROR(UllmFileOpen(config->checkpoint_path, &checkpoint_file));
+  checkpoint_file.size = stories260K_bin_len;
+  printf("Called UllmLlama2ReadCheckpoint checkpoint_file->size=%" PRIu64 "\n", checkpoint_file.size);
+  UllmLlama2Transformer *t = &state->transformer;
   UllmStatus status = ULLM_STATUS_OK;
-  ULLM_GOTO_IF_ERROR(cleanup, status, UllmFileRead(&checkpoint_file,
-      &t->config, sizeof(UllmLlama2Config)));
+  memcpy(&t->config, stories260K_bin, sizeof(UllmLlama2Config));
+  printf("raw bytes: %02x %02x %02x %02x\n",
+         stories260K_bin[20],
+         stories260K_bin[21],
+         stories260K_bin[22],
+         stories260K_bin[23]);
+  printf("Called UllmLlama2ReadCheckpoint  t->config.vocab_size=%" PRId32 "\n", t->config.vocab_size);
+
+  // ULLM_GOTO_IF_ERROR(cleanup, status, UllmFileRead(&checkpoint_file,
+  //     &t->config, sizeof(UllmLlama2Config)));
 
   // negative vocab size is hacky way of signaling unshared weights. bit yikes.
   int shared_weights = t->config.vocab_size > 0 ? 1 : 0;
+
   t->config.vocab_size = abs(t->config.vocab_size);
   status = ReadWeights(&t->weights, &t->config,
       &checkpoint_file, shared_weights);
@@ -148,13 +163,15 @@ cleanup:
 
 static UllmStatus UllmLlama2BuildTransformer(const UllmLlama2RunConfig* config,
   UllmLlama2State* state) {
-  
-  // if (config->steps > state->transformer.config.seq_len) {
-  //     ULLM_RETURN_IF_ERROR(UllmLlama2ReadCheckpoint(config, state));
-  //     ULOGE("steps out of range: %u vs %" PRIu32,
-  //       config->steps, state->transformer.config.seq_len);
-  //     return ULLM_STATUS_INVALID_ARGUMENT;
-  // }
+  printf("Called UllmLlama2BuildTransformer\n");
+  printf("%d | %d\n", config->steps,state->transformer.config.seq_len);
+
+  if (config->steps > state->transformer.config.seq_len) {
+      ULLM_RETURN_IF_ERROR(UllmLlama2ReadCheckpoint(config, state));
+      ULOGE("steps out of range: %u vs %" PRIu32,
+        config->steps, state->transformer.config.seq_len);
+      return ULLM_STATUS_INVALID_ARGUMENT;
+  }
 
   return UllmLlama2MallocRunState(&state->transformer);
 }
@@ -412,9 +429,13 @@ int compare_tokens(const void *a, const void *b) {
 
 UllmStatus UllmLlama2BuildTokenizer(const UllmLlama2RunConfig* config,
     UllmLlama2State* state) {
+  printf("Called UllmLlama2BuildTokenizer\n");
+
   // UllmMemoryAlloc space to hold the scores and the strings
   UllmLlama2Tokenizer* t = &state->tokenizer;
   const int32_t vocab_size = state->transformer.config.vocab_size;
+  printf("Called UllmLlama2BuildTokenizer vocab_size: %d\n", vocab_size);
+
   t->vocab = (char**)UllmMemoryAlloc(vocab_size * sizeof(char*));
   if (t->vocab == NULL) {
     ULOGE("Failed to allocate vocab buffer");
@@ -482,9 +503,10 @@ UllmStatus UllmLlama2BuildTokenizer(const UllmLlama2RunConfig* config,
     t->sorted_vocab[i].id = i;
   }
   qsort(t->sorted_vocab, vocab_size, sizeof(UllmLlama2TokenIndex), compare_tokens);
+  printf("Called UllmLlama2BuildTokenizer Success\n");
 
 cleanup:
-  UllmFileClose(&tokenizer_file);
+  // UllmFileClose(&tokenizer_file);
   return status;
 }
 
@@ -732,6 +754,8 @@ int sample_topp(float* probabilities, int n, float topp, UllmLlama2ProbIndex* pr
 
 static UllmStatus UllmLlama2BuildSampler(const UllmLlama2RunConfig* config,
     UllmLlama2State* state) {
+  printf("Called UllmLlama2BuildSampler\n");
+
   UllmLlama2Sampler* sampler = &state->sampler;
   sampler->rng_state = config->rng_seed;
   sampler->probindex = UllmMemoryAlloc(state->transformer.config.vocab_size
@@ -788,6 +812,8 @@ int sample(const UllmLlama2RunConfig* config, UllmLlama2State* state, float* log
 
 // Validates that the supplied config is correct.
 static UllmStatus UllmLlama2ValidateConfig(const UllmLlama2RunConfig* config) {
+  printf("Called UllmLlama2ValidateConfig\n");
+
   if (config->prompt == NULL) {
     ULOGE("prompt must not be NULL");
     return ULLM_STATUS_INVALID_ARGUMENT;
@@ -823,26 +849,38 @@ void UllmLlama2RunConfigInit(UllmLlama2RunConfig* config) {
 
 UllmStatus UllmLlama2Init(const UllmLlama2RunConfig* config,
     UllmLlama2State* state) {
+  printf("Called UllmLlama2Init\n");
+
   memset(state, 0, sizeof(UllmLlama2State));
   ULLM_RETURN_IF_ERROR(UllmLlama2ValidateConfig(config));
   ULLM_RETURN_IF_ERROR(UllmLlama2BuildTransformer(config, state));
   ULLM_RETURN_IF_ERROR(UllmLlama2BuildTokenizer(config, state));
   ULLM_RETURN_IF_ERROR(UllmLlama2BuildSampler(config, state));
+  printf("Called UllmLlama2Init ULLM_STATUS_OK\n");
+
   return ULLM_STATUS_OK;
 }
 
 UllmStatus UllmLlama2Generate(const UllmLlama2RunConfig* config,
     UllmLlama2State* state) {
+  printf("Called UllmLlama2Generate\n");
+
   // +3 for '\0', ?BOS, ?EOS
   size_t prompt_tokens_size = (strlen(config->prompt) + 3) * sizeof(int);
+  printf("Called UllmLlama2Generate prompt_tokens_size passed %d\n", prompt_tokens_size);
+
   int* prompt_tokens = UllmMemoryAlloc(prompt_tokens_size);
+  printf("Called UllmLlama2Generate prompt_tokens UllmMemoryAlloc passed\n");
+
   if (prompt_tokens == NULL) {
     ULOGE("Failed to allocate prompt tokens");
     return ULLM_STATUS_OOM;
   }
+  printf("Called UllmLlama2Generate prompt_tokens passed\n");
 
   // Sample the start time.
   uint64_t start_time_ns = UllmTimeNanos();
+  printf("Called UllmLlama2Generate start_time_ns passed\n");
 
   // encode the (string) prompt into tokens sequence
   int num_prompt_tokens = 0;
@@ -855,6 +893,11 @@ UllmStatus UllmLlama2Generate(const UllmLlama2RunConfig* config,
   int next; // will store the next token in the sequence
   int token = prompt_tokens[0]; // kick off with the first token in the prompt
   unsigned int pos = 0;     // position in the sequence
+  printf("Called UllmLlama2Generate while\n");
+  printf("Called UllmLlama2Generate config->steps:");
+  printf("%d" ,config->steps);
+  printf("\n");
+
   while (pos < config->steps) {
     // forward the transformer to get logits for the next token
     float* logits = forward(&state->transformer, token, pos);

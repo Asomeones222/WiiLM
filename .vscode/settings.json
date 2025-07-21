@@ -11,5 +11,6 @@
         "*.x": "c",
         "memory.h": "c",
         "stories260k-bige.h": "c"
-    }
+    },
+    "makefile.configureOnOpen": true
 }

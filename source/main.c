@@ -90,6 +90,7 @@ typedef struct {
 void OutputHandler(const char* token, void* cookie) {
   // __fpurge(stdout);
   printf("%s", token);
+  printf("%c", token);
 }
 
 UllmStatus UllmRunLlama2(const Args* args) {
@@ -156,24 +157,10 @@ int main(int argc, char** argv) {
   Initialise();
   printf("Hi!\n");
 
-  // if (argc > 0) {
-  //   c_flags_set_application_name(argv[0]);
-  // }
-
-  // char** prompt = c_flag_string(
-  //     "prompt", "p", "LLM prompt", "");
-  // bool *help = c_flag_bool(
-  //     "help", "h", "show usage", false);
-  // c_flags_parse(&argc, &argv, false);
-
-  // if (*help) {
-  //   c_flags_usage();
-  //   return 0;
-  // } else if (strlen(*prompt) == 0) {
-  //   c_flags_usage();
-  // } else {
+  char prompt[] = "Once upon a time";
   Args args = {
-      .prompt = "Once upon a time"};
+    .prompt = prompt
+  };
 
   printf("Args:");
   printf(args.prompt);
@@ -187,7 +174,6 @@ int main(int argc, char** argv) {
   } else {
       ULOGE("Failed to run inference: %s", UllmStatusToString(status));
   }
-  // }
 
   return -1;
 }

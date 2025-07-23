@@ -29,58 +29,61 @@
 
 #define ULLM_LOG_TAG "ullm.file"
 
-UllmStatus UllmFileOpen(const char* path, UllmFile* file) {
-  memset(file, 0, sizeof(UllmFile));
+// UllmStatus UllmFileOpen(const char* path, UllmFile* file) {
+//   memset(file, 0, sizeof(UllmFile));
 
-  struct stat st;
-  if (stat(path, &st) != 0) {
-    ULOGE("Failed to stat file '%s': %s (%d)", path, strerror(errno), errno);
-    return ULLM_STATUS_IO_ERROR;
-  }
+//   struct stat st;
+//   if (stat(path, &st) != 0) {
+//     ULOGE("Failed to stat file '%s': %s (%d)", path, strerror(errno), errno);
+//     return ULLM_STATUS_IO_ERROR;
+//   }
 
-  file->fd = open(path, O_RDONLY);
-  if (file->fd < 0) {
-    ULOGE("Failed to open file '%s': %s (%d)", path, strerror(errno), errno);
-    return ULLM_STATUS_IO_ERROR;
-  }
+//   file->fd = open(path, O_RDONLY);
+//   if (file->fd < 0) {
+//     ULOGE("Failed to open file '%s': %s (%d)", path, strerror(errno), errno);
+//     return ULLM_STATUS_IO_ERROR;
+//   }
 
-  file->size = st.st_size;
-  ULOGI("Opened file '%s' with size %" PRIu64, path, file->size);
-  return ULLM_STATUS_OK;
-}
+//   file->size = st.st_size;
+//   ULOGI("Opened file '%s' with size %" PRIu64, path, file->size);
+//   return ULLM_STATUS_OK;
+// }
 
 UllmStatus UllmFileRead(const UllmFile* file, void* dst, uint64_t size) {
-  ssize_t bytes_read = read(file->fd, dst, size);
-  if (bytes_read < 0) {
-    ULOGE("Failed to read file: %s (%d)", strerror(errno), errno);
-    return ULLM_STATUS_IO_ERROR;
-  }
+  // ssize_t bytes_read = read(file->fd, dst, size);
+  memcpy(dst, file->data + file->offset, size);
+  file->offset += size;
+  // if (bytes_read < 0)
+  // {
+  //   ULOGE("Failed to read file: %s (%d)", strerror(errno), errno);
+  //   return ULLM_STATUS_IO_ERROR;
+  // }
 
   return ULLM_STATUS_OK;
 }
 
-UllmStatus UllmFileSeek(const UllmFile* file, uint64_t advance) {
-  off_t result = lseek(file->fd, advance, SEEK_CUR);
-  if (result < 0) {
-    ULOGE("Failed to seek file: %s (%d)", strerror(errno), errno);
-    return ULLM_STATUS_IO_ERROR;
-  }
+// UllmStatus UllmFileSeek(const UllmFile* file, uint64_t advance) {
+//   off_t result = lseek(file->fd, advance, SEEK_CUR);
+//   if (result < 0) {
+//     ULOGE("Failed to seek file: %s (%d)", strerror(errno), errno);
+//     return ULLM_STATUS_IO_ERROR;
+//   }
 
-  return ULLM_STATUS_OK;
-}
+//   return ULLM_STATUS_OK;
+// }
 
-UllmStatus UllmFileGetPos(const UllmFile* file, uint64_t* pos) {
-  off_t result = lseek(file->fd, 0, SEEK_CUR);
-  if (result < 0) {
-    ULOGE("Failed to seek file for pos: %s (%d)", strerror(errno), errno);
-    return ULLM_STATUS_IO_ERROR;
-  }
+// UllmStatus UllmFileGetPos(const UllmFile* file, uint64_t* pos) {
+//   off_t result = lseek(file->fd, 0, SEEK_CUR);
+//   if (result < 0) {
+//     ULOGE("Failed to seek file for pos: %s (%d)", strerror(errno), errno);
+//     return ULLM_STATUS_IO_ERROR;
+//   }
 
-  return ULLM_STATUS_OK;
-}
+//   return ULLM_STATUS_OK;
+// }
 
-void UllmFileClose(UllmFile* file) {
-  if (file->fd >= 0) {
-    close(file->fd);
-  }
+// void UllmFileClose(UllmFile* file) {
+//   if (file->fd >= 0) {
+//     close(file->fd);
+//   }
 }

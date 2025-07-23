@@ -28,7 +28,8 @@
 #include <inttypes.h>
 #include <math.h>
 #include <string.h>
-
+#include <ogcsys.h>
+#include <gccore.h>
 #ifdef __ALTIVEC__
 #include <altivec.h>
 #define ULLM_ALTIVEC_ENABLED
@@ -82,32 +83,47 @@ static UllmStatus ReadWeight(UllmFile* file,
 
 static UllmStatus ReadWeights(UllmLlama2TransformerWeights *w,
     UllmLlama2Config* p, UllmFile* file, int shared_weights) {
+
   int head_size = p->dim / p->n_heads;
   uint64_t n_layers = p->n_layers;
+
   ULLM_RETURN_IF_ERROR(ReadWeight(file, &w->token_embedding_table,
-      p->vocab_size * p->dim, "token_embedding_table"));
+      p->vocab_size * p->dim, "token_embedding_table"))
+      
   ULLM_RETURN_IF_ERROR(ReadWeight(file, &w->rms_att_weight,
-      n_layers * p->dim, "rms_att_weight"));
+      n_layers * p->dim, "rms_att_weight"))
+      
   ULLM_RETURN_IF_ERROR(ReadWeight(file, &w->wq,
-      n_layers * p->dim * (p->n_heads * head_size), "wq"));
+      n_layers * p->dim * (p->n_heads * head_size), "wq"))
+      
   ULLM_RETURN_IF_ERROR(ReadWeight(file, &w->wk,
-      n_layers * p->dim * (p->n_kv_heads * head_size), "wk"));
+      n_layers * p->dim * (p->n_kv_heads * head_size), "wk"))
+      
   ULLM_RETURN_IF_ERROR(ReadWeight(file, &w->wv,
-      n_layers * p->dim * (p->n_kv_heads * head_size), "wv"));
+      n_layers * p->dim * (p->n_kv_heads * head_size), "wv"))
+      
   ULLM_RETURN_IF_ERROR(ReadWeight(file, &w->wo,
-      n_layers * (p->n_heads * head_size) * p->dim, "wo"));
+      n_layers * (p->n_heads * head_size) * p->dim, "wo"))
+      
   ULLM_RETURN_IF_ERROR(ReadWeight(file, &w->rms_ffn_weight,
-      n_layers * p->dim, "rms_ffn_weight"));
+      n_layers * p->dim, "rms_ffn_weight"))
+      
   ULLM_RETURN_IF_ERROR(ReadWeight(file, &w->w1,
-      n_layers * p->dim * p->hidden_dim, "w1"));
+      n_layers * p->dim * p->hidden_dim, "w1"))
+      
   ULLM_RETURN_IF_ERROR(ReadWeight(file, &w->w2,
-      n_layers * p->hidden_dim * p->dim, "w2"));
+      n_layers * p->hidden_dim * p->dim, "w2"))
+      
   ULLM_RETURN_IF_ERROR(ReadWeight(file, &w->w3,
-      n_layers * p->dim * p->hidden_dim, "w3"));
+      n_layers * p->dim * p->hidden_dim, "w3"))
+      
   ULLM_RETURN_IF_ERROR(ReadWeight(file, &w->rms_final_weight,
-      p->dim, "rms_final_weight"));
-  ULLM_RETURN_IF_ERROR(UllmFileSeek(file, p->seq_len * head_size / 2));
-  ULLM_RETURN_IF_ERROR(UllmFileSeek(file, p->seq_len * head_size / 2));
+      p->dim, "rms_final_weight"))
+      
+  ULLM_RETURN_IF_ERROR(UllmFileSeek(file, p->seq_len * head_size / 2))
+  
+  ULLM_RETURN_IF_ERROR(UllmFileSeek(file, p->seq_len * head_size / 2))
+  
 
   if (shared_weights) {
     w->wcls = w->token_embedding_table;
@@ -134,31 +150,33 @@ static UllmStatus UllmLlama2ReadCheckpoint(const UllmLlama2RunConfig* config,
   // memory map the Transformer weights into the data pointer
   UllmFile checkpoint_file;
   // ULLM_RETURN_IF_ERROR(UllmFileOpen(config->checkpoint_path, &checkpoint_file));
-  checkpoint_file.size = stories260K_bin_len;
-  printf("Called UllmLlama2ReadCheckpoint checkpoint_file->size=%" PRIu64 "\n", checkpoint_file.size);
+  checkpoint_file.data = stories260K_bin;
+  checkpoint_file.offset = 0;
 
   UllmLlama2Transformer *t = &state->transformer;
   UllmStatus status = ULLM_STATUS_OK;
   uint32_t offset = 0;
-  printf("raw bytes: %02x %02x %02x %02x\n",
-         stories260K_bin[20],
-         stories260K_bin[21],
-         stories260K_bin[22],
-         stories260K_bin[23]);
-         
-  // memcpy(&t->config, (uint8_t *)(stories260K_bin + offset), sizeof(UllmLlama2Config));
-  // offset += sizeof(UllmLlama2Config);
-  // printf("Called UllmLlama2ReadCheckpoint  t->config.vocab_size=%" PRId32 "\n", t->config.vocab_size);
+  printf("raw bytes: %02x %02x %02x %02x %02x\n",
+         stories260K_bin[0],
+         stories260K_bin[1],
+         stories260K_bin[2],
+         stories260K_bin[3],
+         stories260K_bin[4]);
+
+  SYS_Report("ze pointer is %p\r", stories260K_bin);
+  memcpy(&t->config, checkpoint_file.data, sizeof(UllmLlama2Config));
+  checkpoint_file.offset += sizeof(UllmLlama2Config);
+  printf("Called UllmLlama2ReadCheckpoint  t->config.vocab_size=%" PRId32 "\n", t->config.vocab_size);
 
   // ULLM_GOTO_IF_ERROR(cleanup, status, UllmFileRead(&checkpoint_file,
   //     &t->config, sizeof(UllmLlama2Config)));
 
   // // negative vocab size is hacky way of signaling unshared weights. bit yikes.
-  // int shared_weights = t->config.vocab_size > 0 ? 1 : 0;
+  int shared_weights = t->config.vocab_size > 0 ? 1 : 0;
 
-  // t->config.vocab_size = abs(t->config.vocab_size);
-  // status = ReadWeights(&t->weights, &t->config,
-  //     &checkpoint_file, shared_weights);
+  t->config.vocab_size = abs(t->config.vocab_size);
+  status = ReadWeights(&t->weights, &t->config,
+      &checkpoint_file, shared_weights);
 
 cleanup:
   // UllmFileClose(&checkpoint_file);

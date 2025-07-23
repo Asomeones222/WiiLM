@@ -22,7 +22,7 @@
 #define ULLM_LOG_TAG "ullm.sys.memory"
 
 void* UllmMemoryAlloc(size_t size) {
-  // printf("Called UllmMemoryAlloc with size %d\n", size);
+  printf("Called UllmMemoryAlloc with size %lu\n", (unsigned long)size);
   // ULOGD("Allocating %zu bytes", size);
   return malloc(size);
 }

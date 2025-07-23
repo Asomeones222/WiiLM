@@ -28,5 +28,6 @@ void* UllmMemoryAlloc(size_t size) {
 }
 
 void UllmMemoryFree(void* ptr) {
-  free(ptr);
+  // printf("attempted free");
+  // free(ptr);
 }

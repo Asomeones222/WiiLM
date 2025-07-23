@@ -136,31 +136,32 @@ static UllmStatus UllmLlama2ReadCheckpoint(const UllmLlama2RunConfig* config,
   // ULLM_RETURN_IF_ERROR(UllmFileOpen(config->checkpoint_path, &checkpoint_file));
   checkpoint_file.size = stories260K_bin_len;
   printf("Called UllmLlama2ReadCheckpoint checkpoint_file->size=%" PRIu64 "\n", checkpoint_file.size);
-  
+
   UllmLlama2Transformer *t = &state->transformer;
   UllmStatus status = ULLM_STATUS_OK;
   uint32_t offset = 0;
-  memcpy(&t->config, (uint8_t *)(stories260K_bin + offset), sizeof(UllmLlama2Config));
-  offset += sizeof(UllmLlama2Config);
   printf("raw bytes: %02x %02x %02x %02x\n",
          stories260K_bin[20],
          stories260K_bin[21],
          stories260K_bin[22],
          stories260K_bin[23]);
-  printf("Called UllmLlama2ReadCheckpoint  t->config.vocab_size=%" PRId32 "\n", t->config.vocab_size);
+         
+  // memcpy(&t->config, (uint8_t *)(stories260K_bin + offset), sizeof(UllmLlama2Config));
+  // offset += sizeof(UllmLlama2Config);
+  // printf("Called UllmLlama2ReadCheckpoint  t->config.vocab_size=%" PRId32 "\n", t->config.vocab_size);
 
   // ULLM_GOTO_IF_ERROR(cleanup, status, UllmFileRead(&checkpoint_file,
   //     &t->config, sizeof(UllmLlama2Config)));
 
-  // negative vocab size is hacky way of signaling unshared weights. bit yikes.
-  int shared_weights = t->config.vocab_size > 0 ? 1 : 0;
+  // // negative vocab size is hacky way of signaling unshared weights. bit yikes.
+  // int shared_weights = t->config.vocab_size > 0 ? 1 : 0;
 
-  t->config.vocab_size = abs(t->config.vocab_size);
-  status = ReadWeights(&t->weights, &t->config,
-      &checkpoint_file, shared_weights);
+  // t->config.vocab_size = abs(t->config.vocab_size);
+  // status = ReadWeights(&t->weights, &t->config,
+  //     &checkpoint_file, shared_weights);
 
 cleanup:
-  UllmFileClose(&checkpoint_file);
+  // UllmFileClose(&checkpoint_file);
   return ULLM_STATUS_OK;
 }
 
@@ -171,11 +172,11 @@ static UllmStatus UllmLlama2BuildTransformer(const UllmLlama2RunConfig* config,
   printf("config->steps: %d\n", config->steps);
 
   ULLM_RETURN_IF_ERROR(UllmLlama2ReadCheckpoint(config, state));
-  if (config->steps > state->transformer.config.seq_len) {
-      ULOGE("steps out of range: %u vs %" PRIu32,
-        config->steps, state->transformer.config.seq_len);
-      return ULLM_STATUS_INVALID_ARGUMENT;
-  }
+  // if (config->steps > state->transformer.config.seq_len) {
+  //     ULOGE("steps out of range: %u vs %" PRIu32,
+  //       config->steps, state->transformer.config.seq_len);
+  //     return ULLM_STATUS_INVALID_ARGUMENT;
+  // }
   state->transformer.config.vocab_size = 512;
   return UllmLlama2MallocRunState(&state->transformer);
 }

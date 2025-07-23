@@ -18,13 +18,16 @@
 #define ULLM_SYS_MEMORY_H_
 
 #include <stddef.h>
+#include <stdio.h>
+#include <stdint.h>
+#include <inttypes.h> 
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 // Allocate memory.
-void* UllmMemoryAlloc(size_t size);
+void *UllmMemoryAlloc(uint32_t size);
 
 // Release memory.
 void UllmMemoryFree(void* ptr);

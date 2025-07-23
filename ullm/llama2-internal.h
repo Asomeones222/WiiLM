@@ -43,9 +43,7 @@ typedef struct {
   int32_t n_kv_heads;
   int32_t vocab_size;
   int32_t seq_len;
-} 
-// __attribute__((packed)) 
-UllmLlama2Config;
+} __attribute__((packed)) UllmLlama2Config;
 
 typedef struct {
   // token embedding table

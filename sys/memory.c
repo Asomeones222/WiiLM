@@ -18,11 +18,15 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "log.h"
+#include <stdint.h>
+#include <inttypes.h>
 
 #define ULLM_LOG_TAG "ullm.sys.memory"
 
-void* UllmMemoryAlloc(size_t size) {
-  printf("Called UllmMemoryAlloc with size %lu\n", (unsigned long)size);
+void *UllmMemoryAlloc(uint32_t size)
+{
+  printf("Called UllmMemoryAlloc with size: %" PRIu32 "\n", size);
+
   // ULOGD("Allocating %zu bytes", size);
   return malloc(size);
 }

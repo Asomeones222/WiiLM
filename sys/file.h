@@ -29,18 +29,19 @@ extern "C" {
 // File details.
 typedef struct UllmFile
 {
-  int offset;
-  unsigned char data[];
+  uint64_t offset;
+  uint64_t size;
+  unsigned char* data;
 } UllmFile;
 
 // // Opens the supplied file, and populates the size or returns an error.
 // UllmStatus UllmFileOpen(const char* path, UllmFile* file);
 
 // Reads the supplied size into a destination buffer.
-UllmStatus UllmFileRead(const UllmFile* file, void* dst, uint64_t size);
+UllmStatus UllmFileRead(UllmFile* file, void* dst, uint64_t size);
 
 // // Seeks the file.
-// UllmStatus UllmFileSeek(const UllmFile* file, uint64_t advance);
+UllmStatus UllmFileSeek(UllmFile* file, uint64_t advance);
 
 // // Obtains the current position within the file.
 // UllmStatus UllmFileGetPos(const UllmFile* file, uint64_t* pos);

@@ -49,7 +49,7 @@
 //   return ULLM_STATUS_OK;
 // }
 
-UllmStatus UllmFileRead(const UllmFile* file, void* dst, uint64_t size) {
+UllmStatus UllmFileRead(UllmFile* file, void* dst, uint64_t size) {
   // ssize_t bytes_read = read(file->fd, dst, size);
   memcpy(dst, file->data + file->offset, size);
   file->offset += size;
@@ -62,15 +62,10 @@ UllmStatus UllmFileRead(const UllmFile* file, void* dst, uint64_t size) {
   return ULLM_STATUS_OK;
 }
 
-// UllmStatus UllmFileSeek(const UllmFile* file, uint64_t advance) {
-//   off_t result = lseek(file->fd, advance, SEEK_CUR);
-//   if (result < 0) {
-//     ULOGE("Failed to seek file: %s (%d)", strerror(errno), errno);
-//     return ULLM_STATUS_IO_ERROR;
-//   }
-
-//   return ULLM_STATUS_OK;
-// }
+UllmStatus UllmFileSeek(UllmFile* file, uint64_t advance) {
+  file->offset += advance;
+  return ULLM_STATUS_OK;
+}
 
 // UllmStatus UllmFileGetPos(const UllmFile* file, uint64_t* pos) {
 //   off_t result = lseek(file->fd, 0, SEEK_CUR);
@@ -86,4 +81,4 @@ UllmStatus UllmFileRead(const UllmFile* file, void* dst, uint64_t size) {
 //   if (file->fd >= 0) {
 //     close(file->fd);
 //   }
-}
+// }

@@ -59,8 +59,7 @@ static UllmStatus UllmLlama2MallocRunState(UllmLlama2Transformer* t) {
   s->value_cache = UllmMemoryAlloc(p->n_layers * p->seq_len * kv_dim * sizeof(float));
   s->att = UllmMemoryAlloc(p->n_heads * p->seq_len * sizeof(float));
   s->logits = UllmMemoryAlloc(p->vocab_size * sizeof(float));
-  if (!s->x || !s->xb || !s->xb2 || !s->hb || !s->hb2 || !s->q || !s->key_cache
-      || !s->value_cache || !s->att || !s->logits) {
+  if (s->x == NULL || s->xb == NULL || s->xb2 == NULL || s->hb == NULL || s->hb2 == NULL || s->q == NULL || s->key_cache == NULL || s->value_cache == NULL || s->att == NULL || s->logits == NULL) {
     ULOGE("Failed to allocate run state");
     return ULLM_STATUS_OOM;
   }
@@ -69,9 +68,9 @@ static UllmStatus UllmLlama2MallocRunState(UllmLlama2Transformer* t) {
   return ULLM_STATUS_OK;
 }
 
-static UllmStatus ReadWeight(UllmFile* file,
-    float** dst, size_t size, const char* name) {
-  size_t buf_size = size * sizeof(float);
+static UllmStatus ReadWeight(UllmFile *file, float **dst, uint32_t size, const char *name)
+{
+  uint32_t buf_size = size * sizeof(float);
   *dst = UllmMemoryAlloc(buf_size);
   if (*dst == NULL) {
     ULOGE("Failed to allocate %s", name);
@@ -83,54 +82,56 @@ static UllmStatus ReadWeight(UllmFile* file,
 
 static UllmStatus ReadWeights(UllmLlama2TransformerWeights *w,
     UllmLlama2Config* p, UllmFile* file, int shared_weights) {
-
+  printf("Called ReadWeights\n");
+  
   int head_size = p->dim / p->n_heads;
   uint64_t n_layers = p->n_layers;
+  printf("ReadWeights head_size: %d\n", head_size);
+  printf("ReadWeights n_layers: %" PRIu64 "\n", n_layers);
+  printf("ReadWeights p->vocab_size %" PRId32 "\n", p->vocab_size);
+  printf("ReadWeights p->dim: %" PRId32 "\n", p->dim);
 
   ULLM_RETURN_IF_ERROR(ReadWeight(file, &w->token_embedding_table,
-      p->vocab_size * p->dim, "token_embedding_table"))
+      p->vocab_size * p->dim, "token_embedding_table"));
       
   ULLM_RETURN_IF_ERROR(ReadWeight(file, &w->rms_att_weight,
-      n_layers * p->dim, "rms_att_weight"))
+      n_layers * p->dim, "rms_att_weight"));
       
   ULLM_RETURN_IF_ERROR(ReadWeight(file, &w->wq,
-      n_layers * p->dim * (p->n_heads * head_size), "wq"))
+      n_layers * p->dim * (p->n_heads * head_size), "wq"));
       
   ULLM_RETURN_IF_ERROR(ReadWeight(file, &w->wk,
-      n_layers * p->dim * (p->n_kv_heads * head_size), "wk"))
+      n_layers * p->dim * (p->n_kv_heads * head_size), "wk"));
       
   ULLM_RETURN_IF_ERROR(ReadWeight(file, &w->wv,
-      n_layers * p->dim * (p->n_kv_heads * head_size), "wv"))
+      n_layers * p->dim * (p->n_kv_heads * head_size), "wv"));
       
   ULLM_RETURN_IF_ERROR(ReadWeight(file, &w->wo,
-      n_layers * (p->n_heads * head_size) * p->dim, "wo"))
+      n_layers * (p->n_heads * head_size) * p->dim, "wo"));
       
   ULLM_RETURN_IF_ERROR(ReadWeight(file, &w->rms_ffn_weight,
-      n_layers * p->dim, "rms_ffn_weight"))
+      n_layers * p->dim, "rms_ffn_weight"));
       
   ULLM_RETURN_IF_ERROR(ReadWeight(file, &w->w1,
-      n_layers * p->dim * p->hidden_dim, "w1"))
+      n_layers * p->dim * p->hidden_dim, "w1"));
       
   ULLM_RETURN_IF_ERROR(ReadWeight(file, &w->w2,
-      n_layers * p->hidden_dim * p->dim, "w2"))
+      n_layers * p->hidden_dim * p->dim, "w2"));
       
   ULLM_RETURN_IF_ERROR(ReadWeight(file, &w->w3,
-      n_layers * p->dim * p->hidden_dim, "w3"))
+      n_layers * p->dim * p->hidden_dim, "w3"));
       
   ULLM_RETURN_IF_ERROR(ReadWeight(file, &w->rms_final_weight,
-      p->dim, "rms_final_weight"))
-      
-  ULLM_RETURN_IF_ERROR(UllmFileSeek(file, p->seq_len * head_size / 2))
-  
-  ULLM_RETURN_IF_ERROR(UllmFileSeek(file, p->seq_len * head_size / 2))
-  
+      p->dim, "rms_final_weight"));
+
+  ULLM_RETURN_IF_ERROR(UllmFileSeek(file, p->seq_len * head_size / 2));
+
+  ULLM_RETURN_IF_ERROR(UllmFileSeek(file, p->seq_len * head_size / 2));
 
   if (shared_weights) {
     w->wcls = w->token_embedding_table;
   } else {
-    uint64_t offset;
-    ULLM_RETURN_IF_ERROR(UllmFileGetPos(file, &offset));
-    uint64_t buf_size = file->size - offset;
+    uint64_t buf_size = file->size - file->offset;
     w->wcls = UllmMemoryAlloc(buf_size);
     if (w->wcls == NULL) {
       ULOGE("Failed to allocate wcls");
@@ -151,6 +152,7 @@ static UllmStatus UllmLlama2ReadCheckpoint(const UllmLlama2RunConfig* config,
   UllmFile checkpoint_file;
   // ULLM_RETURN_IF_ERROR(UllmFileOpen(config->checkpoint_path, &checkpoint_file));
   checkpoint_file.data = stories260K_bin;
+  checkpoint_file.size = stories260K_bin_len;
   checkpoint_file.offset = 0;
 
   UllmLlama2Transformer *t = &state->transformer;
@@ -175,8 +177,7 @@ static UllmStatus UllmLlama2ReadCheckpoint(const UllmLlama2RunConfig* config,
   int shared_weights = t->config.vocab_size > 0 ? 1 : 0;
 
   t->config.vocab_size = abs(t->config.vocab_size);
-  status = ReadWeights(&t->weights, &t->config,
-      &checkpoint_file, shared_weights);
+  status = ReadWeights(&t->weights, &t->config, &checkpoint_file, shared_weights);
 
 cleanup:
   // UllmFileClose(&checkpoint_file);

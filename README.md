@@ -44,5 +44,6 @@ The `.dol` is the Wii executable.
 
 
 ## Finally
-The code is kinda messy but dw ur smart and will manage
+The code is kinda messy but dw ur smart and will manage.
+
 Happy wii hacking!

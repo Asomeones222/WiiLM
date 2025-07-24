@@ -25,13 +25,13 @@
 
 void *UllmMemoryAlloc(uint32_t size)
 {
-  // printf("Called UllmMemoryAlloc with size: %" PRIu32 "\n", size);
+//  // printf("Called UllmMemoryAlloc with size: %" PRIu32 "\n", size);
 
   // ULOGD("Allocating %zu bytes", size);
   return malloc(size);
 }
 
 void UllmMemoryFree(void* ptr) {
-  // printf("attempted free");
+//  // printf("attempted free");
   // free(ptr);
 }

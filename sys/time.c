@@ -16,10 +16,9 @@
 
 #include "time.h"
 #include <time.h>
-
-uint64_t UllmTimeNanos() {
-  // struct 1 t;
-  // clock_gettime(CLOCK_MONOTONIC, &t);
-  // return (t.tv_sec * 1000000000) + t.tv_nsec;
-  return 1722002;
+#include <gccore.h>
+#include <ogc/lwp_watchdog.h>
+u64 UllmTimeNanos(){
+  u64 t = gettick();
+  return t;
 }

@@ -30,6 +30,7 @@
 #include <string.h>
 #include <ogcsys.h>
 #include <gccore.h>
+#include <ogc/lwp_watchdog.h>
 #ifdef __ALTIVEC__
 #include <altivec.h>
 #define ULLM_ALTIVEC_ENABLED
@@ -44,7 +45,7 @@
 #define ULLM_LOG_TAG "ullm.llama2"
 
 static UllmStatus UllmLlama2MallocRunState(UllmLlama2Transformer* t) {
-  printf("Called UllmLlama2MallocRunState\n");
+//  printf("Called UllmLlama2MallocRunState\n");
 
   UllmLlama2RunState* s = &t->state;
   UllmLlama2Config* p = &t->config;
@@ -63,7 +64,7 @@ static UllmStatus UllmLlama2MallocRunState(UllmLlama2Transformer* t) {
     ULOGE("Failed to allocate run state");
     return ULLM_STATUS_OOM;
   }
-  printf("Called UllmLlama2MallocRunState ULLM_STATUS_OK\n");
+//  printf("Called UllmLlama2MallocRunState ULLM_STATUS_OK\n");
 
   return ULLM_STATUS_OK;
 }
@@ -82,14 +83,14 @@ static UllmStatus ReadWeight(UllmFile *file, float **dst, uint32_t size, const c
 
 static UllmStatus ReadWeights(UllmLlama2TransformerWeights *w,
     UllmLlama2Config* p, UllmFile* file, int shared_weights) {
-  printf("Called ReadWeights\n");
+//  printf("Called ReadWeights\n");
   
   int head_size = p->dim / p->n_heads;
   uint64_t n_layers = p->n_layers;
-  printf("ReadWeights head_size: %d\n", head_size);
-  printf("ReadWeights n_layers: %" PRIu64 "\n", n_layers);
-  printf("ReadWeights p->vocab_size %" PRId32 "\n", p->vocab_size);
-  printf("ReadWeights p->dim: %" PRId32 "\n", p->dim);
+//  printf("ReadWeights head_size: %d\n", head_size);
+//  printf("ReadWeights n_layers: %" PRIu64 "\n", n_layers);
+//  printf("ReadWeights p->vocab_size %" PRId32 "\n", p->vocab_size);
+//  printf("ReadWeights p->dim: %" PRId32 "\n", p->dim);
 
   ULLM_RETURN_IF_ERROR(ReadWeight(file, &w->token_embedding_table,
       p->vocab_size * p->dim, "token_embedding_table"));
@@ -146,7 +147,7 @@ static UllmStatus ReadWeights(UllmLlama2TransformerWeights *w,
 
 static UllmStatus UllmLlama2ReadCheckpoint(const UllmLlama2RunConfig* config,
     UllmLlama2State* state) {
-  printf("Called UllmLlama2ReadCheckpoint\n");
+//  printf("Called UllmLlama2ReadCheckpoint\n");
 
   // memory map the Transformer weights into the data pointer
   UllmFile checkpoint_file;
@@ -158,17 +159,17 @@ static UllmStatus UllmLlama2ReadCheckpoint(const UllmLlama2RunConfig* config,
   UllmLlama2Transformer *t = &state->transformer;
   UllmStatus status = ULLM_STATUS_OK;
   uint32_t offset = 0;
-  printf("raw bytes: %02x %02x %02x %02x %02x\n",
-         stories260K_bin[0],
-         stories260K_bin[1],
-         stories260K_bin[2],
-         stories260K_bin[3],
-         stories260K_bin[4]);
+//  printf("raw bytes: %02x %02x %02x %02x %02x\n",
+        //  stories260K_bin[0],
+        //  stories260K_bin[1],
+        //  stories260K_bin[2],
+        //  stories260K_bin[3],
+        //  stories260K_bin[4]);
 
-  SYS_Report("ze pointer is %p\r", stories260K_bin);
+  // SYS_Report("ze pointer is %p\r", stories260K_bin);
   memcpy(&t->config, checkpoint_file.data, sizeof(UllmLlama2Config));
   checkpoint_file.offset += sizeof(UllmLlama2Config);
-  printf("Called UllmLlama2ReadCheckpoint  t->config.vocab_size=%" PRId32 "\n", t->config.vocab_size);
+//  printf("Called UllmLlama2ReadCheckpoint  t->config.vocab_size=%" PRId32 "\n", t->config.vocab_size);
 
   // ULLM_GOTO_IF_ERROR(cleanup, status, UllmFileRead(&checkpoint_file,
   //     &t->config, sizeof(UllmLlama2Config)));
@@ -186,9 +187,9 @@ cleanup:
 
 static UllmStatus UllmLlama2BuildTransformer(const UllmLlama2RunConfig* config,
   UllmLlama2State* state) {
-  printf("Called UllmLlama2BuildTransformer\n");
-  printf("state->transformer.config.seq_len: %" PRId32 "\n", state->transformer.config.seq_len);
-  printf("config->steps: %d\n", config->steps);
+//  printf("Called UllmLlama2BuildTransformer\n");
+//  printf("state->transformer.config.seq_len: %" PRId32 "\n", state->transformer.config.seq_len);
+//  printf("config->steps: %d\n", config->steps);
 
   ULLM_RETURN_IF_ERROR(UllmLlama2ReadCheckpoint(config, state));
   // if (config->steps > state->transformer.config.seq_len) {
@@ -452,12 +453,12 @@ int compare_tokens(const void *a, const void *b) {
 
 UllmStatus UllmLlama2BuildTokenizer(const UllmLlama2RunConfig* config,
     UllmLlama2State* state) {
-  printf("Called UllmLlama2BuildTokenizer\n");
+//  printf("Called UllmLlama2BuildTokenizer\n");
 
   // UllmMemoryAlloc space to hold the scores and the strings
   UllmLlama2Tokenizer* t = &state->tokenizer;
   const int32_t vocab_size = state->transformer.config.vocab_size;
-  printf("Called UllmLlama2BuildTokenizer vocab_size: %d\n", vocab_size);
+//  printf("Called UllmLlama2BuildTokenizer vocab_size: %d\n", vocab_size);
 
   t->vocab = (char**)UllmMemoryAlloc(vocab_size * sizeof(char*));
   if (t->vocab == NULL) {
@@ -487,6 +488,7 @@ UllmStatus UllmLlama2BuildTokenizer(const UllmLlama2RunConfig* config,
   UllmStatus status = ULLM_STATUS_OK;
   ULLM_GOTO_IF_ERROR(cleanup, status, UllmFileRead(&tokenizer_file,
       &max_token_length, sizeof(uint32_t)));
+  max_token_length = __builtin_bswap32(max_token_length);
 
   // Replacement for opening the tokenizer file
   // instead of read(fd, &max_token_length, 4);
@@ -494,11 +496,11 @@ UllmStatus UllmLlama2BuildTokenizer(const UllmLlama2RunConfig* config,
   // memcpy(&max_token_length, (uint8_t *)(tok512_bin + offset), sizeof(uint32_t));
   // offset += sizeof(uint32_t);
 
-  printf("UllmLlama2BuildTokenizer max_token_length: %" PRIu32 "\n", max_token_length);
+//  printf("UllmLlama2BuildTokenizer max_token_length: %" PRIu32 "\n", max_token_length);
   // Create a temporary buffer that will store merge candidates of always two
   // consecutive tokens. Double for concat, +1 for null terminator +2 for UTF8
   // (in case max_token_length is 1)
-  size_t token_buffer_size = max_token_length * 4 + 1 + 1;
+  size_t token_buffer_size = max_token_length * 2 + 1 + 1;
   t->token_buffer = UllmMemoryAlloc(token_buffer_size);
   if (t->token_buffer == NULL) {
     ULOGE("Failed to allocate token_buffer");
@@ -510,13 +512,16 @@ UllmStatus UllmLlama2BuildTokenizer(const UllmLlama2RunConfig* config,
         &t->vocab_scores[i], sizeof(float)));
     // memcpy(&t->vocab_scores[i], (uint8_t *)(tok512_bin + offset), sizeof(float));
     // offset += sizeof(float);
-
+    t->vocab_scores[i] = __builtin_bswap32(t->vocab_scores[i]);
     uint32_t len;
     ULLM_GOTO_IF_ERROR(cleanup, status, UllmFileRead(&tokenizer_file,
         &len, sizeof(uint32_t)));
+    len = __builtin_bswap32(len);
+
     // memcpy(&len, (uint8_t *)(tok512_bin + offset), sizeof(uint32_t));
     // offset += sizeof(uint32_t);
-
+    // printf("length is now %" PRIu32 "\n", len);
+    // printf("offset is now %" PRIu64 "\n", tokenizer_file.offset);
     t->vocab[i] = (char *)UllmMemoryAlloc(len + 1);
     if (t->vocab[i] == NULL) {
       ULOGE("Failed to alloc vocab memory");
@@ -528,21 +533,22 @@ UllmStatus UllmLlama2BuildTokenizer(const UllmLlama2RunConfig* config,
     // memcpy(t->vocab[i], (uint8_t *)(tok512_bin + offset), len);
     // offset += len;
     t->vocab[i][len] = '\0'; // add the string terminating token
-    printf("\n");
+//    printf("\n");
   }
-  for (int j = 0; t->vocab[0][j]!='\0'; j++)
-    printf("vocab: %c", t->vocab[0][j]);
-  printf("offset %" PRIu64 "\n", tokenizer_file.offset);
+  // for (int j = 0; j < vocab_size; j++)
+  //   printf("vocab: %s\n", t->vocab[j]);
+//  printf("offset %" PRIu64 "\n", tokenizer_file.offset);
 
   for (int i = 0; i < vocab_size; i++) {
     t->sorted_vocab[i].str = t->vocab[i];
     t->sorted_vocab[i].id = i;
   }
   qsort(t->sorted_vocab, vocab_size, sizeof(UllmLlama2TokenIndex), compare_tokens);
-  printf("Called UllmLlama2BuildTokenizer Success\n");
+//  printf("Called UllmLlama2BuildTokenizer Success\n");
 
 cleanup:
   // UllmFileClose(&tokenizer_file);
+  tokenizer_file.offset = 0;
   return status;
 }
 
@@ -560,42 +566,44 @@ static void UllmLlama2FreeTokenizer(UllmLlama2State* state) {
 static void UllmLlama2EmitPiece(const UllmLlama2RunConfig* config,
     const char *piece) {
   // Filter out empty, invalid tokens, or non-printable characers.
-  if (config->output_callback == NULL || piece == NULL || piece[0] == '\0'
-      || (piece[1] == '\0' && !isprint(piece[0]) && !isspace(piece[0]))) {
-    return;
-  }
+  // if (config->output_callback == NULL || piece == NULL || piece[0] == '\0'
+  //     || (piece[1] == '\0' && !isprint(piece[0]) && !isspace(piece[0]))) {
+  //   return;
+  // }
   config->output_callback(piece, config->cookie);
 }
 
 static void UllmLlama2Decode(const UllmLlama2RunConfig* config,
     UllmLlama2Tokenizer* t, int prev_token, int token) {
-  printf("Decode start\n");
+//  printf("Decode start\n");
   // following BOS (1) token strip leading whitespace
   const char *piece = t->vocab[token];
   if (prev_token == 1 && piece[0] == ' ')
   {
     piece++;
   }
-  printf("Decode piece done\n");
+//  printf("Decode piece done\n");
 
   // careful, some tokens designate raw bytes, and look like e.g. '<0x01>'
   // parse this and convert and return the actual byte
   unsigned char byte_val;
-  if (sscanf(piece, "<0x%02hhX>", &byte_val) == 1) {
+  if (sscanf(piece, "<0x%02hhX>", &byte_val) == 1)
+  {
     char byte_piece[2] = {};
     byte_piece[0] = byte_val;
-    printf("Decode sscanf true\n");
-
+//    printf("Decode sscanf true\n");
     UllmLlama2EmitPiece(config, byte_piece);
-  } else {
-    printf("Decode sscanf false\n");
+  }
+  else
+  {
+    //    printf("Decode sscanf false\n");
     UllmLlama2EmitPiece(config, piece);
   }
-  printf("Decode done\n");
+//  printf("Decode done\n");
 }
 
 int str_lookup(const char *str, UllmLlama2TokenIndex *sorted_vocab, int vocab_size) {
-  printf("called str_lookup");
+//  printf("called str_lookup");
 
   // efficiently find the perfect match for str in vocab, return its index or -1 if not found
   UllmLlama2TokenIndex tok = { .str = str }; // acts as the key to search for
@@ -606,11 +614,11 @@ int str_lookup(const char *str, UllmLlama2TokenIndex *sorted_vocab, int vocab_si
 static void UllmLlama2Encode(const UllmLlama2RunConfig* config,
     UllmLlama2State* state, int8_t bos, int8_t eos, int *tokens,
     int *n_tokens) {
-  printf("Called UllmLlama2Encode\n");
+//  printf("Called UllmLlama2Encode\n");
   // encode the string text (input) into an upper-bound preallocated tokens[] array
   // bos != 0 means prepend the BOS token (=1), eos != 0 means append the EOS token (=2)
   int32_t vocab_size = state->transformer.config.vocab_size;
-  printf("UllmLlama2Encode vocab_size: %d\n", vocab_size);
+//  printf("UllmLlama2Encode vocab_size: %d\n", vocab_size);
 
   UllmLlama2Tokenizer* t = &state->tokenizer;
   size_t str_len = 0;
@@ -622,19 +630,19 @@ static void UllmLlama2Encode(const UllmLlama2RunConfig* config,
   if (bos) {
     tokens[(*n_tokens)++] = 1;
   }
-  printf("UllmLlama2Encode bos passed");
+//  printf("UllmLlama2Encode bos passed");
 
   // add_dummy_prefix is true by default
   // so prepend a dummy prefix token to the input string, but only if text != ""
   // TODO: pretty sure this isn't correct in the general case but I don't have the
   // energy to read more of the sentencepiece code to figure out what it's doing
   if (config->prompt[0] != '\0') {
-    printf("Called config->prompt[0]");
+//    printf("Called config->prompt[0]");
     int dummy_prefix = str_lookup(" ", t->sorted_vocab, vocab_size);
     if (dummy_prefix!=-1)
       tokens[(*n_tokens)++] = dummy_prefix;
   }
-  printf("UllmLlama2Encode config->prompt[0] passed");
+//  printf("UllmLlama2Encode config->prompt[0] passed");
 
   // Okay UTF-8 time. This will get messy. Here is the reference from Wikipedia:
   // Code point ↔ UTF-8 conversion
@@ -684,28 +692,28 @@ static void UllmLlama2Encode(const UllmLlama2RunConfig* config,
     }
     str_len = 0; // protect against a sequence of stray UTF8 continuation bytes
   }
-  printf("UllmLlama2Encode loop passed");
+//  printf("UllmLlama2Encode loop passed");
   for (int i=0; i < (*n_tokens); i++) {
-    printf("The address stored in tokens[%d] is: %d\n",i, tokens[i]);
+//    printf("The address stored in tokens[%d] is: %d\n",i, tokens[i]);
   }
   // merge the best consecutive pair each iteration, according the scores in vocab_scores
   while (1) {
-    printf("UllmLlama2Encode second loop iter");
+//    printf("UllmLlama2Encode second loop iter");
 
     float best_score = -1e10;
     int best_id = -1;
     int best_idx = -1;
 
     for (int i=0; i < (*n_tokens-1); i++) {
-      printf("UllmLlama2Encode second loop for iter");
+//      printf("UllmLlama2Encode second loop for iter");
 
       // check if we can merge the pair (tokens[i], tokens[i+1])
       char *x = t->vocab[tokens[i]];
       char *y = t->vocab[tokens[i + 1]];
-      printf("The address stored in y is: %p\n", (void *)y);
-      printf("The address stored in tokens[i + 1] is: %d\n", tokens[i + 1]);
-      sprintf(t->token_buffer, "%s%s", x, y);
-      printf("Format %s%s\n", t->vocab[tokens[i]], t->vocab[tokens[i + 1]]);
+//      printf("The address stored in y is: %p\n", (void *)y);
+//      printf("The address stored in tokens[i + 1] is: %d\n", tokens[i + 1]);
+//      sprintf(t->token_buffer, "%s%s", x, y);
+//      printf("Format %s%s\n", t->vocab[tokens[i]], t->vocab[tokens[i + 1]]);
       int id = str_lookup(t->token_buffer, t->sorted_vocab, vocab_size);
       if (id != -1 && t->vocab_scores[id] > best_score) {
         // this merge pair exists in vocab! record its score and position
@@ -727,13 +735,13 @@ static void UllmLlama2Encode(const UllmLlama2RunConfig* config,
     }
     (*n_tokens)--; // token length decreased
   }
-  printf("UllmLlama2Encode second loop passed");
+//  printf("UllmLlama2Encode second loop passed");
 
   // add optional EOS (=2) token, if desired
   if (eos) {
     tokens[(*n_tokens)++] = 2;
   }
-  printf("UllmLlama2Encode passed");
+//  printf("UllmLlama2Encode passed");
 }
 
 // ----------------------------------------------------------------------------
@@ -819,7 +827,7 @@ int sample_topp(float* probabilities, int n, float topp, UllmLlama2ProbIndex* pr
 
 static UllmStatus UllmLlama2BuildSampler(const UllmLlama2RunConfig* config,
     UllmLlama2State* state) {
-  printf("Called UllmLlama2BuildSampler\n");
+//  printf("Called UllmLlama2BuildSampler\n");
 
   UllmLlama2Sampler* sampler = &state->sampler;
   sampler->rng_state = config->rng_seed;
@@ -872,13 +880,13 @@ int sample(const UllmLlama2RunConfig* config, UllmLlama2State* state, float* log
       next = sample_topp(logits, vocab_size, config->topp, sampler->probindex, coin);
     }
   }
-  printf("Sample done\n");
+//  printf("Sample done\n");
   return next;
 }
 
 // Validates that the supplied config is correct.
 static UllmStatus UllmLlama2ValidateConfig(const UllmLlama2RunConfig* config) {
-  printf("Called UllmLlama2ValidateConfig\n");
+//  printf("Called UllmLlama2ValidateConfig\n");
 
   if (config->prompt == NULL) {
     ULOGE("prompt must not be NULL");
@@ -915,43 +923,43 @@ void UllmLlama2RunConfigInit(UllmLlama2RunConfig* config) {
 
 UllmStatus UllmLlama2Init(const UllmLlama2RunConfig* config,
     UllmLlama2State* state) {
-  printf("Called UllmLlama2Init\n");
+//  printf("Called UllmLlama2Init\n");
 
   memset(state, 0, sizeof(UllmLlama2State));
   ULLM_RETURN_IF_ERROR(UllmLlama2ValidateConfig(config));
   ULLM_RETURN_IF_ERROR(UllmLlama2BuildTransformer(config, state));
   ULLM_RETURN_IF_ERROR(UllmLlama2BuildTokenizer(config, state));
   ULLM_RETURN_IF_ERROR(UllmLlama2BuildSampler(config, state));
-  printf("Called UllmLlama2Init ULLM_STATUS_OK\n");
+//  printf("Called UllmLlama2Init ULLM_STATUS_OK\n");
 
   return ULLM_STATUS_OK;
 }
 
 UllmStatus UllmLlama2Generate(const UllmLlama2RunConfig* config,
     UllmLlama2State* state) {
-  printf("Called UllmLlama2Generate\n");
+//  printf("Called UllmLlama2Generate\n");
 
   // +3 for '\0', ?BOS, ?EOS
   size_t prompt_tokens_size = (strlen(config->prompt) + 3) * sizeof(int);
-  printf("Called UllmLlama2Generate prompt_tokens_size passed %d\n", prompt_tokens_size);
+//  printf("Called UllmLlama2Generate prompt_tokens_size passed %d\n", prompt_tokens_size);
 
   int* prompt_tokens = UllmMemoryAlloc(prompt_tokens_size);
-  printf("Called UllmLlama2Generate prompt_tokens UllmMemoryAlloc passed\n");
+//  printf("Called UllmLlama2Generate prompt_tokens UllmMemoryAlloc passed\n");
 
   if (prompt_tokens == NULL) {
     ULOGE("Failed to allocate prompt tokens");
     return ULLM_STATUS_OOM;
   }
-  printf("Called UllmLlama2Generate prompt_tokens passed\n");
+//  printf("Called UllmLlama2Generate prompt_tokens passed\n");
 
   // Sample the start time.
-  uint64_t start_time_ns = UllmTimeNanos();
-  printf("Called UllmLlama2Generate start_time_ns passed\n");
+  uint64_t start_time_ms = UllmTimeNanos();
+//  printf("Called UllmLlama2Generate start_time_ms passed\n");
 
   // encode the (string) prompt into tokens sequence
   int num_prompt_tokens = 0;
   UllmLlama2Encode(config, state, 1, 0, prompt_tokens, &num_prompt_tokens);
-  printf("Called UllmLlama2Generate UllmLlama2Encode passed\n");
+//  printf("Called UllmLlama2Generate UllmLlama2Encode passed\n");
   if (num_prompt_tokens == 0) {
     ULOGE("Prompt contains zero tokens");
     return ULLM_STATUS_INVALID_ARGUMENT;
@@ -960,13 +968,13 @@ UllmStatus UllmLlama2Generate(const UllmLlama2RunConfig* config,
   int next; // will store the next token in the sequence
   int token = prompt_tokens[0]; // kick off with the first token in the prompt
   unsigned int pos = 0;     // position in the sequence
-  printf("Called UllmLlama2Generate config->steps:");
-  printf("%d\n", config->steps);
-  printf("Called UllmLlama2Generate while start\n");
+//  printf("Called UllmLlama2Generate config->steps:");
+//  printf("%d\n", config->steps);
+//  printf("Called UllmLlama2Generate while start\n");
   
   while (pos < config->steps)
   {
-    printf("Called UllmLlama2Generate while pos/config->steps: %d/%d\n", pos , config->steps);
+//    printf("Called UllmLlama2Generate while pos/config->steps: %d/%d\n", pos , config->steps);
     // forward the transformer to get logits for the next token
     float *logits = forward(&state->transformer, token, pos);
 
@@ -983,18 +991,18 @@ UllmStatus UllmLlama2Generate(const UllmLlama2RunConfig* config,
     // data-dependent terminating condition: the BOS (=1) token delimits sequences
     if (next == 1) { 
       break;
-      printf("Called UllmLlama2Generate break at next");
+//      printf("Called UllmLlama2Generate break at next");
     }
 
     UllmLlama2Decode(config, &state->tokenizer, token, next);
     token = next;
   }
-  printf("Called UllmLlama2Generate while done\n");
+//  printf("Called UllmLlama2Generate while done\n");
 
   UllmLlama2EmitPiece(config, "\n");
   if (pos > 1) {
-    uint64_t end_time_ns = UllmTimeNanos();
-    double token_rate = (pos - 1) / ((end_time_ns - start_time_ns) / 1000000000.0);
+    uint64_t end_time_ms = UllmTimeNanos();
+    double token_rate = (pos - 1) / (ticks_to_millisecs(end_time_ms - start_time_ms) / 1000.0);
     ULOGI("Complete: %0.2f token/s", token_rate);
   }
 

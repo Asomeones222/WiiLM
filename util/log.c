@@ -38,7 +38,7 @@ char UllmLogLevelChar(int level) {
 void UllmLog(const char* tag, int level, const char* file, int line,
     const char* fmt, ...) {
   // Print level and tag.
-  printf(tag);
+  // printf(tag);
   // exit(1);
   fprintf(stderr, "%c %s: ", UllmLogLevelChar(level), tag);
 

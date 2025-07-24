@@ -37,17 +37,17 @@
  
 // 	Initialise();
  
-// 	printf("Hi!\n");
+//// 	printf("Hi!\n");
 // 	while (1) {
 //         WPAD_ScanPads();                           // read controller state
 //         u32 pressed = WPAD_ButtonsDown(0);         // buttons pressed this frame
 //         if (pressed & WPAD_BUTTON_A)               // check for A
-// 			printf("A clicked!\n");
+//// 			printf("A clicked!\n");
 // 		if (pressed & WPAD_BUTTON_B)               // check for B
 // 			break;
 //         VIDEO_WaitVSync();                         // throttle loop to video refresh
 //     }
-// 	printf("Bye!\n");
+//// 	printf("Bye!\n");
 // 	return 0;
 // }
 
@@ -89,12 +89,12 @@ typedef struct {
 
 void OutputHandler(const char* token, void* cookie) {
   // __fpurge(stdout);
-  printf("%s", token);
-  printf("%c", token);
+ printf("%s", token);
+//  printf("%c", token);
 }
 
 UllmStatus UllmRunLlama2(const Args* args) {
-  printf("Called UllmRunLlama2\n");
+//  printf("Called UllmRunLlama2\n");
   UllmLlama2RunConfig run_config;
   UllmLlama2RunConfigInit(&run_config);
   run_config.prompt = args->prompt;
@@ -106,7 +106,7 @@ UllmStatus UllmRunLlama2(const Args* args) {
   ULLM_GOTO_IF_ERROR(cleanup, status, UllmLlama2Generate(&run_config, &state));
 
 cleanup:
-  printf("Called UllmRunLlama2 cleanup\n");
+//  printf("Called UllmRunLlama2 cleanup\n");
   UllmLlama2Deinit(&state);
   return status;
 }
@@ -122,7 +122,7 @@ const struct {
 };
 
 UllmStatus UllmRun(const Args* args) {
-  printf("Called UllmRun\n");
+//  printf("Called UllmRun\n");
   return model_runners[0].run(args);
 }
 
@@ -150,21 +150,21 @@ void Initialise() {
     VIDEO_WaitVSync();
 
   // CON_InitEx(rmode, 20, 20, rmode->fbWidth-40, rmode->xfbHeight-40);
-  console_init(xfb, 0, 0, rmode->fbWidth, rmode->xfbHeight, rmode->fbWidth * VI_DISPLAY_PIX_SZ);
+  console_init(xfb, 80, 80, rmode->fbWidth, rmode->xfbHeight, rmode->fbWidth * VI_DISPLAY_PIX_SZ);
 }
 
 int main(int argc, char** argv) {
   Initialise();
-  printf("Hi!\n");
+//  printf("Hi!\n");
 
   char prompt[] = "Once upon a time";
   Args args = {
     .prompt = prompt
   };
 
-  printf("Args:");
-  printf(args.prompt);
-  printf("\n");
+//  printf("Args:");
+ printf(args.prompt);
+ printf(" ");
 
   setbuf(stdout, NULL);
   UllmStatus status = UllmRun(&args);

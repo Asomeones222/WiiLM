@@ -23,6 +23,8 @@
 // #include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #include "memory.h"
 #include "log.h"
@@ -53,6 +55,19 @@ UllmStatus UllmFileRead(UllmFile* file, void* dst, uint64_t size) {
   // ssize_t bytes_read = read(file->fd, dst, size);
   memcpy(dst, file->data + file->offset, size);
   file->offset += size;
+  // const uint8_t *bytes = (const uint8_t *)dst;
+
+  // char *hex_str = malloc(size * 3 + 1); // 2 hex chars per byte + null terminator
+
+  // for (size_t i = 0; i < size; i++)
+  //   sprintf(&hex_str[i * 3], "%02X|", bytes[i]);
+  // hex_str[size * 3] = '\0';
+  // if(size < 12)
+  // {
+  //   printf("starting hex %02X", file->data[file->offset - size]);
+  //   printf("Printing copied bytes: %s with size %" PRIu64 "\n", hex_str, size);
+  // }
+  // free(hex_str);
   // if (bytes_read < 0)
   // {
   //   ULOGE("Failed to read file: %s (%d)", strerror(errno), errno);

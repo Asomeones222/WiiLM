@@ -42,6 +42,10 @@ This produces:
 
 The `.dol` is the Wii executable.
 
+## Acknowledgment
+This project is a fork of https://github.com/aarossig/ullm
+
+aarossig's project already addressed the endianness problem which helped me a lot
 
 ## Finally
 The code is kinda messy but dw ur smart and will manage.

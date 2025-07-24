@@ -566,10 +566,10 @@ static void UllmLlama2FreeTokenizer(UllmLlama2State* state) {
 static void UllmLlama2EmitPiece(const UllmLlama2RunConfig* config,
     const char *piece) {
   // Filter out empty, invalid tokens, or non-printable characers.
-  // if (config->output_callback == NULL || piece == NULL || piece[0] == '\0'
-  //     || (piece[1] == '\0' && !isprint(piece[0]) && !isspace(piece[0]))) {
-  //   return;
-  // }
+  if (config->output_callback == NULL || piece == NULL || piece[0] == '\0'
+      || (piece[1] == '\0' && !isprint(piece[0]) && !isspace(piece[0]))) {
+    return;
+  }
   config->output_callback(piece, config->cookie);
 }
 
@@ -999,7 +999,7 @@ UllmStatus UllmLlama2Generate(const UllmLlama2RunConfig* config,
   }
 //  printf("Called UllmLlama2Generate while done\n");
 
-  UllmLlama2EmitPiece(config, "\n");
+  UllmLlama2EmitPiece(config, "\n\n");
   if (pos > 1) {
     uint64_t end_time_ms = UllmTimeNanos();
     double token_rate = (pos - 1) / (ticks_to_millisecs(end_time_ms - start_time_ms) / 1000.0);

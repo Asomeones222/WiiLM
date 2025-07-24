@@ -150,14 +150,14 @@ void Initialise() {
     VIDEO_WaitVSync();
 
   // CON_InitEx(rmode, 20, 20, rmode->fbWidth-40, rmode->xfbHeight-40);
-  console_init(xfb, 80, 80, rmode->fbWidth, rmode->xfbHeight, rmode->fbWidth * VI_DISPLAY_PIX_SZ);
+  console_init(xfb, 0, 80, rmode->fbWidth, rmode->xfbHeight, rmode->fbWidth * VI_DISPLAY_PIX_SZ);
 }
 
 int main(int argc, char** argv) {
   Initialise();
 //  printf("Hi!\n");
 
-  char prompt[] = "Once upon a time";
+  char prompt[] = "Once upon a time there was a boy and a girl";
   Args args = {
     .prompt = prompt
   };
@@ -170,6 +170,19 @@ int main(int argc, char** argv) {
   UllmStatus status = UllmRun(&args);
   if (status == ULLM_STATUS_OK)
   {
+    printf("\n\n Press A to exit...\n");
+    while (1)
+    {
+      WPAD_ScanPads();
+      WPAD_SetDataFormat(0, WPAD_FMT_BTNS_ACC_IR);
+      u32 pressed = WPAD_ButtonsDown(0) | WPAD_ButtonsDown(1) | WPAD_ButtonsDown(2) | WPAD_ButtonsDown(3);
+      if (pressed & WPAD_BUTTON_A)
+      {
+        break;
+      }
+      VIDEO_WaitVSync();
+    }
+
     return 0;
   } else {
       ULOGE("Failed to run inference: %s", UllmStatusToString(status));
